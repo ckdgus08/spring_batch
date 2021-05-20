@@ -6,9 +6,9 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.CompositeJobParametersValidator;
 import org.springframework.batch.core.job.DefaultJobParametersValidator;
-import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,7 +34,7 @@ public class SpringBatchApplication {
     @Bean
     public Step step1() {
         return this.stepBuilderFactory.get("step1")
-                .tasklet(HelloWorldTasklet("hello", "world.csv"))
+                .tasklet(HelloWorldTasklet(null, null))
                 .build();
     }
 
@@ -43,11 +43,12 @@ public class SpringBatchApplication {
         return this.jobBuilderFactory.get("job")
                 .start(step1())
                 .validator(validator())
-                .incrementer(new RunIdIncrementer())
+                .incrementer(new DailyJobTimestamper())
                 .build();
     }
 
     @Bean
+    @StepScope
     public Tasklet HelloWorldTasklet(
             @Value("#{jobParameters['name']}") String name,
             @Value("#{jobParameters['fileName']}") String fileName
@@ -68,7 +69,7 @@ public class SpringBatchApplication {
         DefaultJobParametersValidator defaultJobParametersValidator
                 = new DefaultJobParametersValidator(
                 new String[]{"fileName"},
-                new String[]{"name", "run.id"});
+                new String[]{"name", "currentDate"});
 
         defaultJobParametersValidator.afterPropertiesSet();
 
@@ -78,6 +79,5 @@ public class SpringBatchApplication {
 
         return validator;
     }
-
 
 }
