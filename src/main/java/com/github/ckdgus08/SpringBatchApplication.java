@@ -6,12 +6,9 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
-import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.CompositeJobParametersValidator;
 import org.springframework.batch.core.job.DefaultJobParametersValidator;
 import org.springframework.batch.core.step.tasklet.Tasklet;
-import org.springframework.batch.repeat.RepeatStatus;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -30,36 +27,45 @@ public class SpringBatchApplication {
     public static void main(String[] args) {
         SpringApplication.run(SpringBatchApplication.class, args);
     }
+//
+//    @Bean
+//    public Step step1() {
+//        return this.stepBuilderFactory.get("step1")
+//                .tasklet(new HelloWorld())
+//                .listener(promotionListener())
+//                .build();
+//    }
 
     @Bean
-    public Step step1() {
-        return this.stepBuilderFactory.get("step1")
-                .tasklet(HelloWorldTasklet(null, null))
+    public Step step2() {
+        return this.stepBuilderFactory.get("step2")
+                .tasklet(HelloWorldTasklet())
                 .build();
     }
 
     @Bean
     public Job job() {
         return this.jobBuilderFactory.get("job")
-                .start(step1())
-                .validator(validator())
-                .incrementer(new DailyJobTimestamper())
-                .listener(new JobLoggerListener())
+                .start(step2())
+//                .next(step2())
+//                .validator(validator())
+//                .incrementer(new DailyJobTimeStamper())
+//                .listener(JobListenerFactoryBean.getListener(
+//                        new JobLoggerListener()))
                 .build();
     }
+//
+//    @Bean
+//    public StepExecutionListener promotionListener() {
+//        ExecutionContextPromotionListener listener = new ExecutionContextPromotionListener();
+//
+//        listener.setKeys(new String[]{"name"});
+//        return listener;
+//    }
 
     @Bean
-    @StepScope
-    public Tasklet HelloWorldTasklet(
-            @Value("#{jobParameters['name']}") String name,
-            @Value("#{jobParameters['fileName']}") String fileName
-    ) {
-
-        return ((contribution, chunkContext) -> {
-            System.out.println(String.format("Hello, %s!", name));
-            System.out.println(String.format("fileName, %s!", fileName));
-            return RepeatStatus.FINISHED;
-        });
+    public Tasklet HelloWorldTasklet() {
+        return new HelloWorld();
     }
 
     @Bean
