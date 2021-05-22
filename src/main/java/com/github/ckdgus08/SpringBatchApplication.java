@@ -1,18 +1,17 @@
 package com.github.ckdgus08;
 
-import com.github.ckdgus08.service.CustomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
-import org.springframework.batch.core.configuration.annotation.StepScope;
-import org.springframework.batch.core.step.tasklet.MethodInvokingTaskletAdapter;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.batch.core.step.tasklet.SimpleSystemProcessExitCodeMapper;
+import org.springframework.batch.core.step.tasklet.SystemCommandTasklet;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 
 @EnableBatchProcessing
 @SpringBootApplication
@@ -28,33 +27,37 @@ public class SpringBatchApplication {
     }
 
     @Bean
-    public Job methodInvokingJob() {
-        return this.jobBuilderFactory.get("methodInvokingJob")
-                .start(methodInvokingStep())
+    public Job SystemCommandJob() {
+        return this.jobBuilderFactory.get("SystemCommandJob")
+                .start(SystemCommandStep())
                 .build();
     }
 
     @Bean
-    public Step methodInvokingStep() {
-        return this.stepBuilderFactory.get("methodInvokingStep")
-                .tasklet(methodInvokingTaskletAdapter(null))
+    public Step SystemCommandStep() {
+        return this.stepBuilderFactory.get("SystemCommandStep")
+                .tasklet(systemCommandTasklet())
                 .build();
     }
 
     @Bean
-    @StepScope
-    public MethodInvokingTaskletAdapter methodInvokingTaskletAdapter(
-            @Value("#{jobParameters['message']}") String message) {
-        MethodInvokingTaskletAdapter methodInvokingTaskletAdapter = new MethodInvokingTaskletAdapter();
+    public SystemCommandTasklet systemCommandTasklet() {
+        SystemCommandTasklet tasklet = new SystemCommandTasklet();
 
-        methodInvokingTaskletAdapter.setTargetObject(service());
-        methodInvokingTaskletAdapter.setTargetMethod("serviceMethod");
-        methodInvokingTaskletAdapter.setArguments(new String[]{message});
-        return methodInvokingTaskletAdapter;
+        tasklet.setCommand("touch tem.txt");
+        tasklet.setTimeout(5000);
+        tasklet.setInterruptOnCancel(true);
+
+        tasklet.setWorkingDirectory("/Users/cch/project/spring_batch");
+        // cd "/Users/cch/project/spring_batch" 와 같은 명령임.
+
+        tasklet.setSystemProcessExitCodeMapper(new SimpleSystemProcessExitCodeMapper());
+        tasklet.setTerminationCheckInterval(5000);
+        tasklet.setTaskExecutor(new SimpleAsyncTaskExecutor());
+        tasklet.setEnvironmentParams(new String[]{"JAVA_HOME=/java", "BATCH_HOME=/Users/batch"});
+
+        return tasklet;
     }
 
-    @Bean
-    public CustomService service() {
-        return new CustomService();
-    }
+
 }
